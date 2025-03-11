@@ -3,6 +3,7 @@ from loguru import logger
 
 from .agents.agent_interface import AgentInterface
 from .agents.basic_memory_agent import BasicMemoryAgent
+from .agents.rag_agent import RAGAgent
 from .stateless_llm_factory import LLMFactory as StatelessLLMFactory
 from .agents.hume_ai import HumeAIAgent
 
@@ -65,6 +66,46 @@ class AgentFactory:
                     "faster_first_response", True
                 ),
                 segment_method=basic_memory_settings.get("segment_method", "pysbd"),
+                interrupt_method=interrupt_method,
+            )
+
+        elif conversation_agent_choice == "rag_agent":
+            # Get the RAG agent settings
+            rag_settings: dict = agent_settings.get("rag_agent", {})
+            llm_provider: str = rag_settings.get("llm_provider")
+            rag_config: dict = rag_settings.get("rag_config")
+
+            if not llm_provider:
+                raise ValueError("LLM provider not specified for RAG agent")
+
+            if not rag_config:
+                raise ValueError("RAG configuration not found")
+
+            # Get the LLM config for this provider
+            llm_config: dict = llm_configs.get(llm_provider)
+            interrupt_method: Literal["system", "user"] = llm_config.pop(
+                "interrupt_method", "user"
+            )
+
+            if not llm_config:
+                raise ValueError(
+                    f"Configuration not found for LLM provider: {llm_provider}"
+                )
+
+            # Create the stateless LLM
+            llm = StatelessLLMFactory.create_llm(
+                llm_provider=llm_provider, system_prompt=system_prompt, **llm_config
+            )
+
+            # Create the RAG agent
+            return RAGAgent(
+                llm=llm,
+                system=system_prompt,
+                live2d_model=live2d_model,
+                rag_config=rag_config,
+                tts_preprocessor_config=tts_preprocessor_config,
+                faster_first_response=rag_settings.get("faster_first_response", True),
+                segment_method=rag_settings.get("segment_method", "pysbd"),
                 interrupt_method=interrupt_method,
             )
 

@@ -198,43 +198,45 @@ class ServiceContext:
             logger.info("VAD already initialized with the same config.")
 
     def init_agent(self, agent_config: AgentConfig, persona_prompt: str) -> None:
-        """Initialize or update the LLM engine based on agent configuration."""
-        logger.info(f"Initializing Agent: {agent_config.conversation_agent_choice}")
-
+        """Initialize the agent with the specified configuration."""
+        # Check if already initialized with the same config
         if (
-            self.agent_engine is not None
-            and agent_config == self.character_config.agent_config
+            self.agent_engine
+            and self.agent_config == agent_config
             and persona_prompt == self.character_config.persona_prompt
         ):
-            logger.debug("Agent already initialized with the same config.")
+            logger.info("Agent already initialized with the same config.")
             return
 
+        # Construct system prompt
         system_prompt = self.construct_system_prompt(persona_prompt)
-
-        # Pass avatar to agent factory
-        avatar = self.character_config.avatar or ""  # Get avatar from config
-
+        
+        # 确保RAG约束已加载
         try:
-            self.agent_engine = AgentFactory.create_agent(
-                conversation_agent_choice=agent_config.conversation_agent_choice,
-                agent_settings=agent_config.agent_settings.model_dump(),
-                llm_configs=agent_config.llm_configs.model_dump(),
-                system_prompt=system_prompt,
-                live2d_model=self.live2d_model,
-                tts_preprocessor_config=self.character_config.tts_preprocessor_config,
-                character_avatar=avatar,  # Add avatar parameter
-            )
-
-            logger.debug(f"Agent choice: {agent_config.conversation_agent_choice}")
-            logger.debug(f"System prompt: {system_prompt}")
-
-            # Save the current configuration
-            self.character_config.agent_config = agent_config
-            self.system_prompt = system_prompt
-
+            rag_constraints = prompt_loader.load_util("rag_constraints")
+            if "只推荐我提供给你的知识库中存在的产品" not in system_prompt:
+                logger.info("添加RAG约束到系统提示中")
+                system_prompt += "\n\n" + rag_constraints
         except Exception as e:
-            logger.error(f"Failed to initialize agent: {e}")
-            raise
+            logger.warning(f"加载RAG约束失败: {str(e)}")
+
+        # Initialize the agent engine
+        self.agent_engine = AgentFactory.create_agent(
+            conversation_agent_choice=agent_config.conversation_agent_choice,
+            agent_settings=agent_config.agent_settings.model_dump(),
+            llm_configs=agent_config.llm_configs.model_dump(),
+            system_prompt=system_prompt,
+            live2d_model=self.live2d_model,
+            tts_preprocessor_config=self.character_config.tts_preprocessor_config,
+            character_avatar=self.character_config.avatar or "",
+        )
+
+        self.agent_config = agent_config
+        logger.debug(f"System prompt: {system_prompt}")
+        logger.info(f"Agent initialized with engine: {agent_config.conversation_agent_choice}")
+
+        # Set the system prompt
+        self.system_prompt = system_prompt
 
     def init_translate(self, translator_config: TranslatorConfig) -> None:
         """Initialize or update the translation engine based on the configuration."""
@@ -289,6 +291,14 @@ class ServiceContext:
                 )
 
             persona_prompt += prompt_content
+            
+        # 添加RAG约束
+        try:
+            rag_constraints = prompt_loader.load_util("rag_constraints")
+            persona_prompt += "\n\n" + rag_constraints
+            logger.info("已添加RAG约束到系统提示中")
+        except Exception as e:
+            logger.warning(f"加载RAG约束失败: {str(e)}")
 
         logger.debug("\n === System Prompt ===")
         logger.debug(persona_prompt)

@@ -1,0 +1,8 @@
+rag:
+  enable: true
+  data_dir: "./data"  # 修改为相对于项目根目录的路径
+  model_settings:
+    ollama_model: "qwen2.5:latest"
+    embeddings_model: "nomic-embed-text"  # 改用更常见的嵌入模型
+    top_k: 2
+  system_message: "你是一个严格基于语料库回答的助手，如果不知道答案就说不知道" 

@@ -15,7 +15,7 @@ T = TypeVar("T", bound=BaseModel)
 
 def read_yaml(config_path: str) -> Dict[str, Any]:
     """
-    Read the specified YAML configuration file with environment variable substitution
+    Read the specified YAML configuration file with environment variable and config parameter substitution
     and guess encoding. Return the configuration data as a dictionary.
 
     Args:
@@ -36,14 +36,27 @@ def read_yaml(config_path: str) -> Dict[str, Any]:
     if not content:
         raise IOError(f"Failed to read configuration file: {config_path}")
 
-    # Replace environment variables
-    pattern = re.compile(r"\$\{(\w+)\}")
+    # First load the raw YAML to get the config parameters
+    raw_config = yaml.safe_load(content)
+    
+    # Get persona_prompt if it exists
+    persona_prompt = raw_config.get('character_config', {}).get('persona_prompt', '')
 
-    def replacer(match):
+    # Replace environment variables
+    env_pattern = re.compile(r"\$\{(\w+)\}")
+    def env_replacer(match):
         env_var = match.group(1)
         return os.getenv(env_var, match.group(0))
+    content = env_pattern.sub(env_replacer, content)
 
-    content = pattern.sub(replacer, content)
+    # Replace config parameters
+    config_pattern = re.compile(r"\$\{(persona_prompt)\}")
+    def config_replacer(match):
+        param_name = match.group(1)
+        if param_name == 'persona_prompt':
+            return persona_prompt
+        return match.group(0)
+    content = config_pattern.sub(config_replacer, content)
 
     try:
         return yaml.safe_load(content)
@@ -119,9 +132,26 @@ def save_config(config: BaseModel, config_path: Union[str, Path]):
 
     try:
         with open(config_file, "w", encoding="utf-8") as f:
-            yaml.dump(config_data, f, allow_unicode=True)
+            yaml.dump(
+                config_data,
+                f,
+                allow_unicode=True,
+                default_flow_style=False,
+                encoding="utf-8",
+                sort_keys=False,
+                width=float("inf")
+            )
     except yaml.YAMLError as e:
         raise yaml.YAMLError(f"Error writing YAML file: {e}")
+    
+    # 验证保存的文件是否正确
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not all(ord(c) < 128 or c.isprintable() for c in content):
+                logger.warning("检测到配置文件中可能包含非打印字符或编码问题")
+    except UnicodeError as e:
+        logger.error(f"配置文件编码验证失败: {e}")
 
 
 def scan_config_alts_directory(config_alts_dir: str) -> list[dict]:

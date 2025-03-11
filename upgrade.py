@@ -239,12 +239,24 @@ def sync_user_config(logger, lang: str = "en") -> None:
                         user_conf=USER_CONF, backup_conf=BACKUP_CONF
                     )
                 )
-                shutil.copy2(USER_CONF, BACKUP_CONF)
+                # 使用二进制模式复制文件以保持原始编码
+                with open(USER_CONF, 'rb') as src, open(BACKUP_CONF, 'wb') as dst:
+                    dst.write(src.read())
 
                 # merge
                 new_keys = merge_configs(
                     user_path=USER_CONF, default_path=default_template, lang=lang
                 )
+                
+                # 验证合并后的文件编码
+                try:
+                    with open(USER_CONF, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        if not all(ord(c) < 128 or c.isprintable() for c in content):
+                            logger.warning("检测到配置文件中可能包含非打印字符或编码问题")
+                except UnicodeError as e:
+                    logger.error(f"配置文件编码验证失败: {e}")
+                
                 if new_keys:
                     logger.info(texts["merged_config_success"])
                     for key in new_keys:

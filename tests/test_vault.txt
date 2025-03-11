@@ -1,0 +1,4 @@
+OpenLLM VTuber是一个开源项目，它结合了大型语言模型和虚拟形象技术，创建了一个能够与用户进行自然对话的虚拟主播系统。
+该项目支持多种LLM后端，包括OpenAI、Claude、Ollama等，并且可以使用Live2D模型作为虚拟形象。
+OpenLLM VTuber是一个开源项目，它结合了大型语言模型和虚拟形象技术，创建了一个能够与用户进行自然对话的虚拟主播系统。
+该项目支持多种LLM后端，包括OpenAI、Claude、Ollama等，并且可以使用Live2D模型作为虚拟形象。

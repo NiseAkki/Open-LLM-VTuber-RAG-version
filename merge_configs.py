@@ -32,6 +32,10 @@ TEXTS_COMPARE = {
 def merge_configs(user_path: str, default_path: str, lang: str = "en"):
     yaml = YAML()
     yaml.preserve_quotes = True
+    yaml.allow_unicode = True
+    yaml.encoding = 'utf-8'
+    yaml.width = float("inf")  # 防止自动换行
+    yaml.default_flow_style = False
 
     user_config = yaml.load(load_text_file_with_guess_encoding(user_path))
     default_config = yaml.load(load_text_file_with_guess_encoding(default_path))
@@ -72,10 +76,20 @@ def merge_configs(user_path: str, default_path: str, lang: str = "en"):
             + default_config["system_config"]["conf_version"]
         )
 
-    with open(user_path, "w") as f:
+    # 使用二进制模式写入文件以保持编码
+    with open(user_path, "wb") as f:
         yaml.dump(merged, f)
+        
+    # 验证写入的文件
+    try:
+        with open(user_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not all(ord(c) < 128 or c.isprintable() for c in content):
+                logger.warning("检测到配置文件中可能包含非打印字符或编码问题")
+    except UnicodeError as e:
+        logger.error(f"配置文件编码验证失败: {e}")
 
-    # Log upgrade details (replacing manual file writing)
+    # Log upgrade details
     texts = TEXTS_MERGE.get(lang, TEXTS_MERGE["en"])
     logger.info(version_change_string)
     for key in new_keys:

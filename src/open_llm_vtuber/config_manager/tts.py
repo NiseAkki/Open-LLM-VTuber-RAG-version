@@ -301,6 +301,39 @@ class SherpaOnnxTTSConfig(I18nMixin):
     }
 
 
+class DoubaoTTSConfig(I18nMixin):
+    """Configuration for Doubao TTS."""
+
+    appid: str = Field(..., alias="appid")
+    access_token: str = Field(..., alias="access_token")
+    cluster: str = Field("volcano_tts", alias="cluster")
+    voice_type: str = Field("BV051_streaming", alias="voice_type")
+    host: str = Field("openspeech.bytedance.com", alias="host")
+
+    DESCRIPTIONS: ClassVar[Dict[str, Description]] = {
+        "appid": Description(
+            en="Platform application ID", 
+            zh="平台申请的appid"
+        ),
+        "access_token": Description(
+            en="Platform access token", 
+            zh="平台申请的access token"
+        ),
+        "cluster": Description(
+            en="Cluster name (default: volcano_tts)", 
+            zh="集群名称（默认：volcano_tts）"
+        ),
+        "voice_type": Description(
+            en="Voice type (default: BV051_streaming)", 
+            zh="音色类型（默认：BV051_streaming）"
+        ),
+        "host": Description(
+            en="API host address (default: openspeech.bytedance.com)", 
+            zh="API主机地址（默认：openspeech.bytedance.com）"
+        ),
+    }
+
+
 class TTSConfig(I18nMixin):
     """Configuration for Text-to-Speech."""
 
@@ -316,6 +349,7 @@ class TTSConfig(I18nMixin):
         "gpt_sovits_tts",
         "fish_api_tts",
         "sherpa_onnx_tts",
+        "doubao_tts",
     ] = Field(..., alias="tts_model")
 
     azure_tts: Optional[AzureTTSConfig] = Field(None, alias="azure_tts")
@@ -331,6 +365,7 @@ class TTSConfig(I18nMixin):
     sherpa_onnx_tts: Optional[SherpaOnnxTTSConfig] = Field(
         None, alias="sherpa_onnx_tts"
     )
+    doubao_tts: Optional[DoubaoTTSConfig] = Field(None, alias="doubao_tts")
 
     DESCRIPTIONS: ClassVar[Dict[str, Description]] = {
         "tts_model": Description(
@@ -356,6 +391,9 @@ class TTSConfig(I18nMixin):
         ),
         "sherpa_onnx_tts": Description(
             en="Configuration for Sherpa Onnx TTS", zh="Sherpa Onnx TTS 配置"
+        ),
+        "doubao_tts": Description(
+            en="Configuration for Doubao TTS", zh="豆包语音合成配置"
         ),
     }
 
@@ -386,5 +424,7 @@ class TTSConfig(I18nMixin):
             values.fish_api_tts.model_validate(values.fish_api_tts.model_dump())
         elif tts_model == "sherpa_onnx_tts" and values.sherpa_onnx_tts is not None:
             values.sherpa_onnx_tts.model_validate(values.sherpa_onnx_tts.model_dump())
+        elif tts_model == "doubao_tts" and values.doubao_tts is not None:
+            values.doubao_tts.model_validate(values.doubao_tts.model_dump())
 
         return values

@@ -45,6 +45,46 @@ class BasicMemoryAgentConfig(I18nMixin, BaseModel):
     }
 
 
+class RAGAgentConfig(I18nMixin, BaseModel):
+    """Configuration for the RAG agent."""
+
+    llm_provider: Literal[
+        "openai_compatible_llm",
+        "claude_llm",
+        "llama_cpp_llm",
+        "ollama_llm",
+        "openai_llm",
+        "gemini_llm",
+        "zhipu_llm",
+        "deepseek_llm",
+        "groq_llm",
+        "mistral_llm",
+    ] = Field(..., alias="llm_provider")
+
+    rag_config: Dict = Field(..., alias="rag_config")
+    faster_first_response: Optional[bool] = Field(True, alias="faster_first_response")
+    segment_method: Literal["regex", "pysbd"] = Field("pysbd", alias="segment_method")
+
+    DESCRIPTIONS: ClassVar[Dict[str, Description]] = {
+        "llm_provider": Description(
+            en="LLM provider to use for this agent",
+            zh="RAG Agent 智能体使用的大语言模型选项",
+        ),
+        "rag_config": Description(
+            en="Configuration for RAG functionality",
+            zh="RAG 功能的配置",
+        ),
+        "faster_first_response": Description(
+            en="Whether to respond as soon as encountering a comma in the first sentence to reduce latency (default: True)",
+            zh="是否在第一句回应时遇上逗号就直接生成音频以减少首句延迟（默认：True）",
+        ),
+        "segment_method": Description(
+            en="Method for segmenting sentences: 'regex' or 'pysbd' (default: 'pysbd')",
+            zh="分割句子的方法：'regex' 或 'pysbd'（默认：'pysbd'）",
+        ),
+    }
+
+
 class Mem0VectorStoreConfig(I18nMixin, BaseModel):
     """Configuration for Mem0 vector store."""
 
@@ -138,12 +178,16 @@ class AgentSettings(I18nMixin, BaseModel):
     basic_memory_agent: Optional[BasicMemoryAgentConfig] = Field(
         None, alias="basic_memory_agent"
     )
+    rag_agent: Optional[RAGAgentConfig] = Field(None, alias="rag_agent")
     mem0_agent: Optional[Mem0Config] = Field(None, alias="mem0_agent")
     hume_ai_agent: Optional[HumeAIConfig] = Field(None, alias="hume_ai_agent")
 
     DESCRIPTIONS: ClassVar[Dict[str, Description]] = {
         "basic_memory_agent": Description(
             en="Configuration for basic memory agent", zh="基础记忆代理配置"
+        ),
+        "rag_agent": Description(
+            en="Configuration for RAG agent", zh="RAG代理配置"
         ),
         "mem0_agent": Description(en="Configuration for Mem0 agent", zh="Mem0代理配置"),
         "hume_ai_agent": Description(
@@ -156,7 +200,7 @@ class AgentConfig(I18nMixin, BaseModel):
     """This class contains all of the configurations related to agent."""
 
     conversation_agent_choice: Literal[
-        "basic_memory_agent", "mem0_agent", "hume_ai_agent"
+        "basic_memory_agent", "mem0_agent", "hume_ai_agent", "rag_agent"
     ] = Field(..., alias="conversation_agent_choice")
     agent_settings: AgentSettings = Field(..., alias="agent_settings")
     llm_configs: StatelessLLMConfigs = Field(..., alias="llm_configs")

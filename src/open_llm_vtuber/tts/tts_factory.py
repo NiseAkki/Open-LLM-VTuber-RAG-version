@@ -113,6 +113,17 @@ class TTSFactory:
 
             return SherpaOnnxTTSEngine(**kwargs)
 
+        elif engine_type == "doubao_tts":
+            from .doubao_tts import TTSEngine as DoubaoTTSEngine
+            
+            return DoubaoTTSEngine(
+                appid=kwargs.get("appid"),
+                access_token=kwargs.get("access_token"), 
+                cluster=kwargs.get("cluster"),
+                voice_type=kwargs.get("voice_type"),
+                host=kwargs.get("host")
+            )
+
         else:
             raise ValueError(f"Unknown TTS engine type: {engine_type}")
 
