@@ -178,7 +178,7 @@ class RAGAgent(AgentInterface):
 
         return "\n".join(message_parts)
 
-    def _to_messages(self, input_data: BatchInput) -> List[Dict[str, Any]]:
+    async def _to_messages(self, input_data: BatchInput) -> List[Dict[str, Any]]:
         """Prepare messages list with RAG context"""
         messages = self._memory.copy()
         
@@ -201,19 +201,19 @@ class RAGAgent(AgentInterface):
             ])
             
             if context_for_query:
-                retrieved_context = self._rag.query(
+                retrieved_context = await self._rag.query(
                     f"Based on this conversation context, what would be relevant to discuss next: {context_for_query}",
                     conversation_history=history
                 )
             else:
                 # 如果没有最近的对话历史，使用一个通用的查询
-                retrieved_context = self._rag.query(
+                retrieved_context = await self._rag.query(
                     "What would be an interesting topic to discuss?",
                     conversation_history=None
                 )
         else:
             # Normal case with user input
-            retrieved_context = self._rag.query(user_query, conversation_history=history)
+            retrieved_context = await self._rag.query(user_query, conversation_history=history)
         
         # Create context message
         if retrieved_context:
@@ -228,25 +228,11 @@ class RAGAgent(AgentInterface):
             content = []
             content.append({"type": "text", "text": user_query})
             for img_data in input_data.images:
-                content.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": img_data.data, "detail": "auto"},
-                    }
-                )
-            user_message = {"role": "user", "content": content}
+                content.append({"type": "image_url", "image_url": img_data.url})
+            messages.append({"role": "user", "content": content})
         else:
-            # For seek proactively case, add a special prompt
-            if not user_query.strip():
-                user_message = {
-                    "role": "user", 
-                    "content": "I'd like to hear your thoughts on something interesting."
-                }
-            else:
-                user_message = {"role": "user", "content": user_query}
+            messages.append({"role": "user", "content": user_query})
 
-        messages.append(user_message)
-        self._add_message(user_message["content"], "user")
         return messages
 
     def _chat_function_factory(
@@ -264,7 +250,7 @@ class RAGAgent(AgentInterface):
         )
         async def chat_with_memory(input_data: BatchInput) -> AsyncIterator[str]:
             """Chat implementation with memory and RAG"""
-            messages = self._to_messages(input_data)
+            messages = await self._to_messages(input_data)
 
             token_stream = chat_func(messages, self._system)
             complete_response = ""
