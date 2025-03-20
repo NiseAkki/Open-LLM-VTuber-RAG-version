@@ -35,6 +35,8 @@ class RAGAgent(AgentInterface):
         system: str,
         live2d_model,
         rag_config: Dict[str, Any],
+        llm_provider: str,
+        llm_configs: Dict[str, Any],
         tts_preprocessor_config: TTSPreprocessorConfig = None,
         faster_first_response: bool = True,
         segment_method: str = "pysbd",
@@ -48,6 +50,8 @@ class RAGAgent(AgentInterface):
             system: `str` - System prompt
             live2d_model: `Live2dModel` - Model for expression extraction
             rag_config: `Dict[str, Any]` - Configuration for RAG module
+            llm_provider: `str` - LLM provider name
+            llm_configs: `Dict[str, Any]` - LLM configurations pool
             tts_preprocessor_config: `TTSPreprocessorConfig` - Configuration for TTS preprocessing
             faster_first_response: `bool` - Whether to enable faster first response
             segment_method: `str` - Method for sentence segmentation
@@ -65,7 +69,7 @@ class RAGAgent(AgentInterface):
         self.set_system(system)
         
         # Initialize RAG module
-        self._rag = RAGSystem(rag_config)
+        self._rag = RAGSystem(rag_config, llm_configs, llm_provider)
         self._rag.initialize()
         logger.info("RAGAgent initialized with RAG module.")
 

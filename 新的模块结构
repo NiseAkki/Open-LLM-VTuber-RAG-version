@@ -1,6 +1,0 @@
-rag/
-├── __init__.py
-├── config.py       # 配置处理
-├── loader.py       # 数据加载处理
-├── retriever.py    # 检索核心逻辑
-└── interface.py    # 对外接口 

@@ -103,6 +103,8 @@ class AgentFactory:
                 system=system_prompt,
                 live2d_model=live2d_model,
                 rag_config=rag_config,
+                llm_provider=llm_provider,
+                llm_configs=llm_configs,
                 tts_preprocessor_config=tts_preprocessor_config,
                 faster_first_response=rag_settings.get("faster_first_response", True),
                 segment_method=rag_settings.get("segment_method", "pysbd"),
